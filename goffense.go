@@ -1,6 +1,15 @@
 package main
 
-func scanSMB()
+//"regexp/syntax"
+//"time"
+//"os"
+//"errors"
+//"log"
+//"flag"
+
+func scanSMB(host string) {
+
+}
 
 func main() {
 
