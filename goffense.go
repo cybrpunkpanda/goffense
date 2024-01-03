@@ -1,16 +1,19 @@
 package main
 
-//"regexp/syntax"
-//"time"
-//"os"
-//"errors"
-//"log"
-//"flag"
+import (
+	"fmt"
+	//"regexp/syntax"
+	//"time"
+	//"os"
+	//"errors"
+	//"log"
+	//"flag"
+)
 
-func scanSMB(host string) {
-
+func scanSMB() {
+	fmt.Println("Hello World!")
 }
 
 func main() {
-
+	scanSMB()
 }
