@@ -8,6 +8,8 @@ import (
 	//"errors"
 	//"log"
 	//"flag"
+	//"github.com/rclone/rclone/backend/smb"
+	//"github.com/miekg/dns"
 )
 
 func scanSMB() {
