@@ -31,21 +31,40 @@ func validIPFormat(ip string) bool {
 }
 
 // Opens file, scans for valid line by line strings and parses them for scanning
-func fileOpenAndParse(txt string) {
+func fileOpenAndParse(txt string) bool {
 	userFile, err := os.Open(txt)
-
+	// If the file does not exist in the current directory it will error out the program
 	if err != nil {
 		log.Fatal(err)
+		return false
 	}
+	// Ensures that, once all of the code within this function is executed, the file that was opened is closed
 	defer userFile.Close()
 
-	parseFile := bufio.NewScanner(userFile)
+	// Variables set for opening and scanning the file and identifying bad IP schema
+	lineScan := bufio.NewScanner(userFile)
+	badIP := false
 
-	for parseFile.Scan() {
-		lineTxt := parseFile.Text()
-
-		fmt.Println(lineTxt)
+	// Evaluates line by line the file
+	for lineScan.Scan() {
+		if !validIPFormat(lineScan.Text()) {
+			fmt.Printf("Invalid IP format found: %s\n", lineScan.Text())
+			badIP = true
+		} else {
+			fmt.Println(lineScan.Text())
+		}
 	}
+
+	if badIP {
+		fmt.Println("One or more of the IP addresses in your list is not formatted correctly")
+	}
+
+	if err := lineScan.Err(); err != nil {
+		log.Fatal(err)
+		return false
+	}
+
+	return true
 }
 
 func scanSMB() {
@@ -77,11 +96,16 @@ func main() {
 		fmt.Println("The CIDR format is incorrect.")
 		os.Exit(1)
 	}
-
+	//Validates the correct format of the IP address should only one be provided
 	if ip != "" && !validIPFormat(ip) {
 		fmt.Println("The IP format is incorrect")
 		os.Exit(1)
 	}
 
-	fmt.Println("The output is", ip)
+	if txt != "" {
+		if !fileOpenAndParse(txt) {
+			os.Exit(1)
+		}
+	}
+
 }
