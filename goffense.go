@@ -7,27 +7,19 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
+	// "strings"
+	"net"
 )
 
 // Validates CIDR format for input and parsing
 func validCIDRFormat(cidr string) bool {
-	cidrParts := strings.Split(cidr, "/")
-
-	if len(cidrParts) != 2 {
-		return false
-	}
-	return true
+	_, _, err := net.ParseCIDR(cidr)
+	return err == nil
 }
 
 // Validates IP format for input and parsing
 func validIPFormat(ip string) bool {
-	stringParts := strings.Split(ip, ".")
-
-	if len(stringParts) != 4 {
-		return false
-	}
-	return true
+	return net.ParseIP(ip) != nil
 }
 
 // Opens file, scans for valid line by line strings and parses them for scanning
@@ -92,16 +84,25 @@ func main() {
 	}
 
 	// This block validates the formatting of the provided target flags provided by the user
-	if cidr != "" && !validCIDRFormat(cidr) {
-		fmt.Println("The CIDR format is incorrect.")
-		os.Exit(1)
+	if cidr != ""{
+		if validCIDRFormat(cidr) {
+			fmt.Println("The CIDR is", cidr)
+		} else {
+			fmt.Println("This is an invalid CIDR format")
+			os.Exit(1)
+		}
 	}
+	
 	//Validates the correct format of the IP address should only one be provided
-	if ip != "" && !validIPFormat(ip) {
-		fmt.Println("The IP format is incorrect")
-		os.Exit(1)
+	if ip != "" {
+		if validIPFormat(ip) {
+			fmt.Println("The IP is", ip)
+		} else {
+			fmt.Println("This is an invalid IP format")
+			os.Exit(1)
+		}
 	}
-
+	
 	if txt != "" {
 		if !fileOpenAndParse(txt) {
 			os.Exit(1)
