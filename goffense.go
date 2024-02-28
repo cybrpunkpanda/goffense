@@ -6,14 +6,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	// "strings"
 	"net"
+	"os"
 )
 
 // Validates CIDR format for input and parsing
 func validCIDRFormat(cidr string) bool {
-	_, _, err := net.ParseCIDR(cidr)
+	_, _, err := net.ParseCIDR(cidr) //Each _ is an omission of the output of net.ParseCIDR
 	return err == nil
 }
 
@@ -48,7 +47,7 @@ func fileOpenAndParse(txt string) bool {
 	}
 
 	if badIP {
-		fmt.Println("One or more of the IP addresses in your list is not formatted correctly")
+		fmt.Println("One or more of the IP addresses in your list is not formatted correctly and was not have been included in the scan")
 	}
 
 	if err := lineScan.Err(); err != nil {
@@ -84,7 +83,7 @@ func main() {
 	}
 
 	// This block validates the formatting of the provided target flags provided by the user
-	if cidr != ""{
+	if cidr != "" {
 		if validCIDRFormat(cidr) {
 			fmt.Println("The CIDR is", cidr)
 		} else {
@@ -92,7 +91,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	
+
 	//Validates the correct format of the IP address should only one be provided
 	if ip != "" {
 		if validIPFormat(ip) {
@@ -102,7 +101,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	
+
 	if txt != "" {
 		if !fileOpenAndParse(txt) {
 			os.Exit(1)
