@@ -45,11 +45,11 @@ func fileOpenAndParse(txt string) bool {
 			fmt.Println(lineScan.Text())
 		}
 	}
-
+	// If variable is set to true this prints
 	if badIP {
 		fmt.Println("One or more of the IP addresses in your list is not formatted correctly and was not have been included in the scan")
 	}
-
+	// If there is an error during the scan this if errors out
 	if err := lineScan.Err(); err != nil {
 		log.Fatal(err)
 		return false
@@ -92,7 +92,7 @@ func main() {
 		}
 	}
 
-	//Validates the correct format of the IP address should only one be provided
+	// Validates the correct format of the IP address should only one be provided
 	if ip != "" {
 		if validIPFormat(ip) {
 			fmt.Println("The IP is", ip)
@@ -102,6 +102,7 @@ func main() {
 		}
 	}
 
+	// Exits if the file is not
 	if txt != "" {
 		if !fileOpenAndParse(txt) {
 			os.Exit(1)
