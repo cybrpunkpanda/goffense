@@ -1,3 +1,2 @@
 # test files
-testIPFile.txt
-testIPFileEmpty.txt
+*.txt
