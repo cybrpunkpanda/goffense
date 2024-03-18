@@ -1,1 +1,2 @@
-Offensive tooling built in golang. Designed for enumeration and persistence. 
+# goffense #
+Offensive tooling written in Golang. Designed for enumeration and persistence. Features in development
