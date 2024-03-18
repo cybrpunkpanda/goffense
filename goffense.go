@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 )
 
 // Validates CIDR format for input and parsing
@@ -58,8 +59,9 @@ func fileOpenAndParse(txt string) bool {
 	return true
 }
 
+// Scans the SMB port on the target
 func scanSMB(target string) {
-	conn, err := net.Dial("tcp", target+":445")
+	conn, err := net.DialTimeout("tcp", target+":445", time.Duration(1)*time.Minute)
 	if err != nil {
 		fmt.Printf("SMB port closed on %s\n", target)
 		return
