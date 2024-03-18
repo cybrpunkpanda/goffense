@@ -58,8 +58,14 @@ func fileOpenAndParse(txt string) bool {
 	return true
 }
 
-func scanSMB() {
-
+func scanSMB(target string) {
+	conn, err := net.Dial("tcp", target+":445")
+	if err != nil {
+		fmt.Printf("SMB port closed on %s\n", target)
+		return
+	}
+	defer conn.Close()
+	fmt.Printf("SMB port open on %s\n", target)
 }
 
 func main() {
@@ -95,7 +101,7 @@ func main() {
 	// Validates the correct format of the IP address should only one be provided
 	if ip != "" {
 		if validIPFormat(ip) {
-			fmt.Println("The IP is", ip)
+			scanSMB(ip)
 		} else {
 			fmt.Println("This is an invalid IP format")
 			os.Exit(1)
