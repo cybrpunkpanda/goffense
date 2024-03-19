@@ -72,13 +72,17 @@ func fileOpenAndParse(txt string) bool {
 
 // Scans the SMB port on the target
 func scanSMB(target string) {
-	conn, err := net.DialTimeout("tcp", target+":445", time.Duration(1)*time.Second)
-	if err != nil {
-		fmt.Printf("SMB port closed on %s\n", target)
-		return
+	smbPorts := []string{"445", "139"}
+	for _, port := range smbPorts {
+		addr := fmt.Sprintf("%s:%s", target, port)
+		conn, err := net.DialTimeout("tcp", addr, time.Duration(1)*time.Second)
+		if err != nil {
+			fmt.Printf("SMB port closed on %s\n", target)
+			return
+		}
+		defer conn.Close()
+		fmt.Printf("SMB port open on %s at port %s\n", target, port)
 	}
-	defer conn.Close()
-	fmt.Printf("SMB port open on %s\n", target)
 }
 
 func printBanner() {
