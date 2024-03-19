@@ -55,8 +55,6 @@ func fileOpenAndParse(txt string) bool {
 		if !validIPFormat(lineScan.Text()) {
 			fmt.Printf("Invalid IP format found: %s\n", lineScan.Text())
 			badIP = true
-		} else {
-			fmt.Println(lineScan.Text())
 		}
 	}
 	// If variable is set to true this prints
@@ -147,9 +145,25 @@ func main() {
 		}
 	}
 
-	// Exits if the file does not exist
+	// Exits if the file does not exist in the current directory. Otherwise it will scan line by line in the file
 	if txt != "" {
-		if !fileOpenAndParse(txt) {
+		if fileOpenAndParse(txt) {
+			file, err := os.Open(txt)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				ip := scanner.Text()
+				scanSMB(ip)
+			}
+
+			if err := scanner.Err(); err != nil {
+				log.Fatal(err)
+			}
+		} else if !fileOpenAndParse(txt) {
 			os.Exit(1)
 		}
 	}
