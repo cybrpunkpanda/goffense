@@ -83,7 +83,24 @@ func scanSMB(target string) {
 	fmt.Printf("SMB port open on %s\n", target)
 }
 
+func printBanner() {
+	banner := `
+===========================================================================		                                                                         
+______   _____   ______   ______   ______   ____   _   ______   ______  
+|   ___| /     \ |   ___| |   ___| |   ___| |    \ | | |   ___| |   ___| 
+|   |  | |     | |   ___| |   ___| |   ___| |     \| |  "-.-"  |   ___| 
+|______| \_____/ |___|    |___|    |______| |__/\____| |______| |______| 
+																	  
+=========================================================================== 
+======================== Created by tacitPanda ============================
+	`
+	fmt.Println(banner)
+}
+
 func main() {
+	// Prints the banner
+	printBanner()
+
 	// Sets variables as flags for input from the user
 	var ipAddr = flag.String("ip", "", "A single IP with four octets is required")
 	var CIDR = flag.String("c", "", "A CIDR notation is")
