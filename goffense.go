@@ -17,6 +17,19 @@ func validCIDRFormat(cidr string) bool {
 	return err == nil
 }
 
+// Increments the IP address by one, creating a slice of IP addresses after the CIDR is parsed
+func incIP(ip net.IP) net.IP {
+	inc := make(net.IP, len(ip))
+	copy(inc, ip)
+	for j := len(inc) - 1; j >= 0; j-- {
+		inc[j]++
+		if inc[j] > 0 {
+			break
+		}
+	}
+	return inc
+}
+
 // Validates IP format for input and parsing
 func validIPFormat(ip string) bool {
 	return net.ParseIP(ip) != nil
@@ -61,7 +74,7 @@ func fileOpenAndParse(txt string) bool {
 
 // Scans the SMB port on the target
 func scanSMB(target string) {
-	conn, err := net.DialTimeout("tcp", target+":445", time.Duration(1)*time.Minute)
+	conn, err := net.DialTimeout("tcp", target+":445", time.Duration(1)*time.Second)
 	if err != nil {
 		fmt.Printf("SMB port closed on %s\n", target)
 		return
@@ -90,10 +103,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// This block validates the formatting of the provided target flags provided by the user
+	// This block validates the formatting of the provided target flags provided by the user. If the format is incorrect the program will exit. If the format is correct the program will continue to the next block of code.
 	if cidr != "" {
 		if validCIDRFormat(cidr) {
-			fmt.Println("The CIDR is", cidr)
+			ip, ipNet, _ := net.ParseCIDR(cidr)
+			cidrSlice := []string{}
+			for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); ip = incIP(ip) {
+				cidrSlice = append(cidrSlice, ip.String())
+			}
+			for _, ip := range cidrSlice {
+				scanSMB(ip)
+			}
 		} else {
 			fmt.Println("This is an invalid CIDR format")
 			os.Exit(1)
@@ -110,7 +130,7 @@ func main() {
 		}
 	}
 
-	// Exits if the file is not
+	// Exits if the file does not exist
 	if txt != "" {
 		if !fileOpenAndParse(txt) {
 			os.Exit(1)
