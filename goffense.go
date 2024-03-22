@@ -85,6 +85,10 @@ func scanSMB(target string) {
 	}
 }
 
+func authSMB(target string) {
+
+}
+
 func printBanner() {
 	banner := `
 ===========================================================================		                                                                         
