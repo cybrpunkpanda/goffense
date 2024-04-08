@@ -13,7 +13,7 @@ import (
 
 // Validates CIDR format for input and parsing
 func validCIDRFormat(cidr string) bool {
-	_, _, err := net.ParseCIDR(cidr) //Each _ is an omission of the output of net.ParseCIDR
+	_, _, err := net.ParseCIDR(cidr)
 	return err == nil
 }
 
@@ -38,30 +38,28 @@ func validIPFormat(ip string) bool {
 // Opens file, scans for valid line by line strings and parses them for scanning
 func fileOpenAndParse(txt string) bool {
 	userFile, err := os.Open(txt)
-	// If the file does not exist in the current directory it will error out the program
+
 	if err != nil {
 		log.Fatal(err)
 		return false
 	}
-	// Ensures that, once all of the code within this function is executed, the file that was opened is closed
+
 	defer userFile.Close()
 
-	// Variables set for opening and scanning the file and identifying bad IP schema
 	lineScan := bufio.NewScanner(userFile)
 	badIP := false
 
-	// Evaluates line by line the file
 	for lineScan.Scan() {
 		if !validIPFormat(lineScan.Text()) {
 			fmt.Printf("Invalid IP format found: %s\n", lineScan.Text())
 			badIP = true
 		}
 	}
-	// If variable is set to true this prints
+
 	if badIP {
 		fmt.Println("One or more of the IP addresses in your list is not formatted correctly and was not have been included in the scan")
 	}
-	// If there is an error during the scan this if errors out
+
 	if err := lineScan.Err(); err != nil {
 		log.Fatal(err)
 		return false
@@ -71,7 +69,7 @@ func fileOpenAndParse(txt string) bool {
 }
 
 // Scans the SMB port on the target
-func scanSMB(target string) {
+func scanSMB(target, usr, pass string) {
 	smbPorts := []string{"445", "139"}
 	for _, port := range smbPorts {
 		addr := fmt.Sprintf("%s:%s", target, port)
@@ -85,10 +83,10 @@ func scanSMB(target string) {
 	}
 }
 
-func authSMB(target string) {
+// Authenticates to the SMB port on the target should authentication be provided via flags
+func authSMB(target, usr, pass string) {
 
 }
-
 func printBanner() {
 	banner := `
 ===========================================================================		                                                                         
@@ -104,13 +102,15 @@ ______   _____   ______   ______   ______   ____   _   ______   ______
 }
 
 func main() {
-	// Prints the banner
+
 	printBanner()
 
 	// Sets variables as flags for input from the user
 	var ipAddr = flag.String("ip", "", "A single IP with four octets is required")
 	var CIDR = flag.String("c", "", "A CIDR notation is")
 	var txtFile = flag.String("f", "", "A file with IP's line by line is required")
+	var username = flag.String("u", "", "Username for SMB login")
+	var password = flag.String("p", "", "Password for SMB login")
 
 	flag.Parse()
 
@@ -118,6 +118,8 @@ func main() {
 	ip := *ipAddr
 	cidr := *CIDR
 	txt := *txtFile
+	usr := *username
+	pass := *password
 
 	// Does checks to make sure at least one of the three required flags is input
 	if ip == "" && cidr == "" && txt == "" {
@@ -135,7 +137,7 @@ func main() {
 				cidrSlice = append(cidrSlice, ip.String())
 			}
 			for _, ip := range cidrSlice {
-				scanSMB(ip)
+				scanSMB(ip, "", "")
 			}
 		} else {
 			fmt.Println("This is an invalid CIDR format")
@@ -146,7 +148,7 @@ func main() {
 	// Validates the correct format of the IP address should only one be provided
 	if ip != "" {
 		if validIPFormat(ip) {
-			scanSMB(ip)
+			scanSMB(ip, "", "")
 		} else {
 			fmt.Println("This is an invalid IP format")
 			os.Exit(1)
@@ -165,7 +167,7 @@ func main() {
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
 				ip := scanner.Text()
-				scanSMB(ip)
+				scanSMB(ip, "", "")
 			}
 
 			if err := scanner.Err(); err != nil {
