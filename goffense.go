@@ -142,7 +142,7 @@ func main() {
 				cidrSlice = append(cidrSlice, ip.String())
 			}
 			for _, ip := range cidrSlice {
-				scanSMB(ip, "", "")
+				scanSMB(ip)
 			}
 		} else {
 			fmt.Println("This is an invalid CIDR format")
@@ -153,7 +153,7 @@ func main() {
 	// Validates the correct format of the IP address should only one be provided
 	if ip != "" {
 		if validIPFormat(ip) {
-			scanSMB(ip, "", "")
+			scanSMB(ip)
 		} else {
 			fmt.Println("This is an invalid IP format")
 			os.Exit(1)
@@ -172,7 +172,7 @@ func main() {
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
 				ip := scanner.Text()
-				scanSMB(ip, "", "")
+				scanSMB(ip)
 			}
 
 			if err := scanner.Err(); err != nil {
