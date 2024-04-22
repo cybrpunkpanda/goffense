@@ -69,24 +69,29 @@ func fileOpenAndParse(txt string) bool {
 }
 
 // Scans the SMB port on the target
-func scanSMB(target, usr, pass string) {
+func scanSMB(target string) []string {
 	smbPorts := []string{"445", "139"}
+	openPorts := []string{}
 	for _, port := range smbPorts {
 		addr := fmt.Sprintf("%s:%s", target, port)
 		conn, err := net.DialTimeout("tcp", addr, time.Duration(1)*time.Second)
 		if err != nil {
 			fmt.Printf("SMB port closed on %s\n", target)
-			return
 		}
 		defer conn.Close()
 		fmt.Printf("SMB port open on %s at port %s\n", target, port)
+		openPorts = append(openPorts, target)
 	}
+
+	return openPorts
+
 }
 
 // Authenticates to the SMB port on the target should authentication be provided via flags
 func authSMB(target, usr, pass string) {
 
 }
+
 func printBanner() {
 	banner := `
 ===========================================================================		                                                                         
@@ -176,6 +181,10 @@ func main() {
 		} else if !fileOpenAndParse(txt) {
 			os.Exit(1)
 		}
+	}
+
+	if usr != "" && pass != "" {
+		authSMB(ip, usr, pass)
 	}
 
 }
