@@ -6,9 +6,13 @@ Offensive tooling written in Golang designed for enumeration and persistence.
 
 ## Usage ##
 
-`go build goffense<fileType>`
+You can use this as is or, per go docs, compile to a executable format of your choice
 
-`goffense <flag> <flagOptions>`
+`go build -o <desiredFileName>.<desiredExecutableFormat> goffense.go `
+
+Once compiled
+
+`goffense.<extension> <flag> <flagOptions>`
 
 ## Current Features ##
 - Port scanning for SMB
