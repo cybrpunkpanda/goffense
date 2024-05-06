@@ -19,6 +19,7 @@ func validCIDRFormat(cidr string) bool {
 	return err == nil
 }
 
+// testing
 // Increments the IP address by one, creating a slice of IP addresses after the CIDR is parsed
 func incIP(ip net.IP) net.IP {
 	inc := make(net.IP, len(ip))
