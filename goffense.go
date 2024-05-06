@@ -9,6 +9,8 @@ import (
 	"net"
 	"os"
 	"time"
+
+	"github.com/hirochachacha/go-smb2"
 )
 
 // Validates CIDR format for input and parsing
@@ -72,14 +74,20 @@ func fileOpenAndParse(txt string) bool {
 func scanSMB(target string) []string {
 	smbPorts := []string{"445", "139"}
 	openPorts := []string{}
+	portOpen := false
 	for _, port := range smbPorts {
 		addr := fmt.Sprintf("%s:%s", target, port)
 		conn, err := net.DialTimeout("tcp", addr, time.Duration(1)*time.Second)
 		if err != nil {
-			fmt.Printf("SMB port closed on %s\n", target)
+			continue
 		}
+
 		defer conn.Close()
-		fmt.Printf("SMB port open on %s at port %s\n", target, port)
+		portOpen = true
+
+	}
+
+	if portOpen {
 		openPorts = append(openPorts, target)
 	}
 
@@ -88,8 +96,32 @@ func scanSMB(target string) []string {
 }
 
 // Authenticates to the SMB port on the target should authentication be provided via flags
-func authSMB(target, usr, pass string) {
+func authSMB(loginTargets []string, usr, pass string) {
 
+	for _, loginAttempt := range loginTargets {
+		fmt.Printf("Attempting to login to %s with %s:%s\n", loginAttempt, usr, pass)
+		client, err := net.Dial("tcp", fmt.Sprintf("%s:445", loginAttempt))
+		if err != nil {
+			fmt.Printf("Failed to authenticate to %s with error: %s\n", loginAttempt, err)
+			continue
+		} else {
+			d := &smb2.Dialer{
+				Initiator: &smb2.NTLMInitiator{
+					User:     usr,
+					Password: pass,
+					Domain:   "",
+				},
+			}
+
+			c, err := d.Dial(client)
+			if err != nil {
+				fmt.Printf("Failed to authenticate to %s with error: %s\n", loginAttempt, err)
+				continue
+			}
+			fmt.Printf("Successfully authenticated to %s\n", loginAttempt)
+			defer c.Logoff()
+		}
+	}
 }
 
 func printBanner() {
@@ -116,6 +148,7 @@ func main() {
 	var txtFile = flag.String("f", "", "A file with IP's line by line is required")
 	var username = flag.String("u", "", "Username for SMB login")
 	var password = flag.String("p", "", "Password for SMB login")
+	//var domain = flag.String("d", "", "Domain for SMB login")
 
 	flag.Parse()
 
@@ -125,6 +158,7 @@ func main() {
 	txt := *txtFile
 	usr := *username
 	pass := *password
+	//dom := *domain
 
 	// Does checks to make sure at least one of the three required flags is input
 	if ip == "" && cidr == "" && txt == "" {
@@ -183,8 +217,21 @@ func main() {
 		}
 	}
 
-	if usr != "" && pass != "" {
-		authSMB(ip, usr, pass)
-	}
+	loginTargets := scanSMB(ip)
+	fmt.Println("SMB ports are open on \n", loginTargets)
 
+	if usr != "" && pass != "" {
+		var authChoice string
+
+		fmt.Println("Would you like to authenticate to the SMB port on the target? (y/n)")
+		fmt.Scanln(&authChoice)
+
+		if authChoice == "y" {
+			authSMB(loginTargets, usr, pass)
+		} else if authChoice == "n" {
+			fmt.Println("Exiting...")
+			os.Exit(1)
+		}
+
+	}
 }
