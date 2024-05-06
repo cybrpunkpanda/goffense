@@ -13,12 +13,12 @@ Offensive tooling written in Golang designed for enumeration and persistence.
 ## Current Features ##
 - Port scanning for SMB
   - Takes input in the form of a single IP (-ip), CIDR notation (-c), or curated list of IPs in a file (-f)
+- Confirming Authentication to shares
 
 ## Features In Development ##
 - Returning detailed information on open ports
   - SMB/Samba Version Details
   - Host OS Details
-- Authenticating to Shares
 - Regex searching of SMB Share files for sensitive information
 - File Exfiltration
 
