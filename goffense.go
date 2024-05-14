@@ -8,18 +8,26 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/hirochachacha/go-smb2"
 )
 
-// Validates CIDR format for input and parsing
+// Struct to collect scan results
+type scanResults struct {
+	IP       string
+	portOpen bool
+	Error    error
+}
+
+// Validates CIDR format and inspects for errors
 func validCIDRFormat(cidr string) bool {
 	_, _, err := net.ParseCIDR(cidr)
 	return err == nil
 }
 
-// Increments the IP address by one, creating a slice of IP addresses after the CIDR is parsed
+// Increments the IP address by one, creating a slice of IP addresses after the CIDR notation is parsed
 func incIP(ip net.IP) net.IP {
 	inc := make(net.IP, len(ip))
 	copy(inc, ip)
@@ -32,7 +40,7 @@ func incIP(ip net.IP) net.IP {
 	return inc
 }
 
-// Validates IP format for input and parsing
+// Validates IP format when input by the user
 func validIPFormat(ip string) bool {
 	return net.ParseIP(ip) != nil
 }
@@ -70,32 +78,28 @@ func fileOpenAndParse(txt string) bool {
 	return true
 }
 
-// Scans the SMB port on the target
-func scanSMB(target string) []string {
-	smbPorts := []string{"445", "139"}
-	openPorts := []string{}
-	portOpen := false
-	for _, port := range smbPorts {
-		addr := fmt.Sprintf("%s:%s", target, port)
-		conn, err := net.DialTimeout("tcp", addr, time.Duration(1)*time.Second)
-		if err != nil {
-			continue
+// Scans the SMB port on the target looking for open ports, reporting for errors if any are found
+func scanSMB(ip string, port string, results chan<- scanResults) {
+	addr := fmt.Sprintf("%s:%s", ip, port)
+	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
+
+	if err != nil {
+		results <- scanResults{
+			IP:       ip,
+			portOpen: false,
+			Error:    err,
 		}
-
-		defer conn.Close()
-		portOpen = true
-
+		return
 	}
 
-	if portOpen {
-		openPorts = append(openPorts, target)
+	defer conn.Close()
+	results <- scanResults{
+		IP:       ip,
+		portOpen: true,
 	}
-
-	return openPorts
-
 }
 
-// Authenticates to the SMB port on the target should authentication be provided via flags
+// Authenticates to the SMB port on the target should authentication be provided via flags. Only runs if flags are provided
 func authSMB(loginTargets []string, usr, pass string) {
 
 	for _, loginAttempt := range loginTargets {
@@ -139,8 +143,23 @@ ______   _____   ______   ______   ______   ____   _   ______   ______
 }
 
 func main() {
-
 	printBanner()
+
+	port := "445"
+	var wg sync.WaitGroup
+	results := make(chan scanResults)
+	var scanResultsSlice []scanResults
+
+	go func() {
+		for result := range results {
+			if result.portOpen {
+				fmt.Printf("SMB port is open on %s\n", result.IP)
+			} else {
+				fmt.Printf("SMB port is closed on %s\n", result.IP)
+			}
+			scanResultsSlice = append(scanResultsSlice, result)
+		}
+	}()
 
 	// Sets variables as flags for input from the user
 	var ipAddr = flag.String("ip", "", "A single IP with four octets is required")
@@ -148,7 +167,6 @@ func main() {
 	var txtFile = flag.String("f", "", "A file with IP's line by line is required")
 	var username = flag.String("u", "", "Username for SMB login")
 	var password = flag.String("p", "", "Password for SMB login")
-	//var domain = flag.String("d", "", "Domain for SMB login")
 
 	flag.Parse()
 
@@ -158,7 +176,6 @@ func main() {
 	txt := *txtFile
 	usr := *username
 	pass := *password
-	//dom := *domain
 
 	// Does checks to make sure at least one of the three required flags is input
 	if ip == "" && cidr == "" && txt == "" {
@@ -176,7 +193,11 @@ func main() {
 				cidrSlice = append(cidrSlice, ip.String())
 			}
 			for _, ip := range cidrSlice {
-				scanSMB(ip)
+				wg.Add(1)
+				go func(ip string) {
+					defer wg.Done()
+					scanSMB(ip, port, results)
+				}(ip)
 			}
 		} else {
 			fmt.Println("This is an invalid CIDR format")
@@ -187,7 +208,11 @@ func main() {
 	// Validates the correct format of the IP address should only one be provided
 	if ip != "" {
 		if validIPFormat(ip) {
-			scanSMB(ip)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				scanSMB(ip, port, results)
+			}()
 		} else {
 			fmt.Println("This is an invalid IP format")
 			os.Exit(1)
@@ -206,7 +231,11 @@ func main() {
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
 				ip := scanner.Text()
-				scanSMB(ip)
+				wg.Add(1)
+				go func(ip string) {
+					defer wg.Done()
+					scanSMB(ip, port, results)
+				}(ip)
 			}
 
 			if err := scanner.Err(); err != nil {
@@ -217,8 +246,16 @@ func main() {
 		}
 	}
 
-	loginTargets := scanSMB(ip)
-	fmt.Println("SMB ports are open on \n", loginTargets)
+	// Start a goroutine to close the results channel after all other goroutines finish.
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	var loginTargets []string
+	for _, result := range scanResultsSlice {
+		loginTargets = append(loginTargets, result.IP)
+	}
 
 	if usr != "" && pass != "" {
 		var authChoice string
@@ -232,6 +269,5 @@ func main() {
 			fmt.Println("Exiting...")
 			os.Exit(1)
 		}
-
 	}
 }
