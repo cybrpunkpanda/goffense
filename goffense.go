@@ -185,14 +185,29 @@ func main() {
 			for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); ip = incIP(ip) {
 				cidrSlice = append(cidrSlice, ip.String())
 			}
+
+			fmt.Println("Scanning CIDR range: ", cidr)
+
 			for _, ip := range cidrSlice {
-				wg.Add(1)
-				go func(ip string) {
-					defer wg.Done()
-					for _, port := range ports {
-						scanSMB(ip, port, results)
-					}
-				}(ip)
+
+				for _, port := range ports {
+					wg.Add(1)
+					go func(ip string, port string) {
+						defer wg.Done()
+						c := make(chan struct{})
+						go func() {
+							defer close(c)
+							scanSMB(ip, port, results)
+						}()
+						select {
+						case <-c:
+							// scanSMB finished
+						case <-time.After(time.Second * 5):
+							// scanSMB didn't finish in 5 seconds
+							fmt.Println("Scan timed out for port: ", port, " on IP: ", ip)
+						}
+					}(ip, port)
+				}
 			}
 		} // <-- Missing curly bracket was here
 		for result := range results {
