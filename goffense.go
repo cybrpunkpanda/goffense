@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	// "errors"
 
@@ -176,6 +177,7 @@ func main() {
 	// This block validates the formatting of the provided target flags provided by the user. If the format is incorrect the program will exit. If the format is correct the program will continue to the next block of code.
 	if cidr != "" {
 		if !validCIDRFormat(cidr) {
+			fmt.Println("This is an invalid CIDR format")
 			os.Exit(1)
 		} else {
 			ip, ipNet, _ := net.ParseCIDR(cidr)
@@ -208,7 +210,18 @@ func main() {
 				wg.Add(1)
 				go func(port string) {
 					defer wg.Done()
-					scanSMB(ip, port, results)
+					c := make(chan struct{})
+					go func() {
+						defer close(c)
+						scanSMB(ip, port, results)
+					}()
+					select {
+					case <-c:
+						// scanSMB finished
+					case <-time.After(time.Second * 5):
+						// scanSMB didn't finish in 5 seconds
+						fmt.Println("Scan timed out for port: ", port, " on IP: ", ip)
+					}
 				}(port)
 			}
 		}
